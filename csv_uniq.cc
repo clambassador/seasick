@@ -12,24 +12,31 @@ using namespace ib;
 
 int main(int argc, char** argv) {
 	if (argc < 2) {
-		Logger::error("usage: % col", argv[0]);
+		Logger::error("usage: % col [freq]", argv[0]);
 		return -1;
 	}
 
 	int col = atoi(argv[1]);
-	set<string> result;
+	int freq = 1;
+	if (argc > 2) freq = atoi(argv[2]);
+	map<string, int> result;
 
+	int count = 1;
 	while (cin.good()) {
-		string s;
-		getline(cin, s);
-		vector<string> p;
-		Tokenizer::split(s, ",", &p);
-		if (p.size() < col) continue;
+		++count;
+		if (count % 1000000 == 0) Logger::error("at %", count);
+		string line, str;
+		getline(cin, line);
+		if (!Tokenizer::fast_split(line, ',', col, &str)) continue;
 
-		result.insert(p[col - 1]);
+		result[str]++;
 	}
-
+	multimap<int, string> matches;
 	for (auto &x : result) {
-		cout << x << endl;
+		if (x.second < freq) continue;
+		matches.insert(make_pair(-x.second, x.first));
+	}
+	for (auto &x : matches) {
+		cout << -x.first <<  " " << x.second << endl;
 	}
 }

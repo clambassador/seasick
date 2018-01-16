@@ -19,13 +19,12 @@ int main(int argc, char** argv) {
 	string str = argv[2];
 
 	while (cin.good()) {
-		string s;
+		string s, val;
 		getline(cin, s);
 		vector<string> p;
-		Tokenizer::split(s, ",", &p);
-		if (p.size() < col) continue;
+		if (!Tokenizer::fast_split(s, ',', col, &val)) continue;
 
-		if (p[col - 1].find(str) == string::npos) continue;
+		if (val.find(str) == string::npos) continue;
 
 		cout << s << endl;
 	}
