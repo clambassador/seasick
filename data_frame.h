@@ -25,25 +25,32 @@ public:
 	virtual void init(const string& csv_file) {
 		_fin.open(csv_file);
 		size_t i = 0;
-		_breaks.push_back(i);
-		_incl.push_back(true);
 		while (_fin.good()) {
 			string s;
 			getline(_fin, s);
-			i += s.length() + 1;
+			if (s.empty() || _fin.eof()) break;
 			_breaks.push_back(i);
-			Logger::info("% %", _breaks.size(), i);
+			i += s.length() + 1;
 			_incl.push_back(true);
 		}
 		_fin.clear();
 	}
 
+	virtual string get(size_t row) {
+		assert(row < _breaks.size());
+		_fin.clear();
+		_fin.seekg(_breaks[row]);
+		string retval;
+		getline(_fin, retval);
+		return retval;
+	}
+
 	virtual string get(size_t col, size_t row) {
 		assert(row < _breaks.size());
+		_fin.clear();
 		_fin.seekg(_breaks[row]);
 		string s, retval;
 		getline(_fin, s);
-		cout << "seek " << col << " " << row << " " << s << endl;
 		Tokenizer::fast_split(s, ',', col, &retval);
 		return retval;
 	}
@@ -51,6 +58,7 @@ public:
 	virtual string get(const set<size_t>& cols, size_t row) {
 		assert(cols.size());
 		_fin.seekg(_breaks[row]);
+		_fin.clear();
 		string s, retval;
 		getline(_fin, s);
 		stringstream ss;
@@ -67,7 +75,7 @@ public:
 		}
 	}
 
-	virtual void grep(const string& word, bool exact, size_t col) {
+	virtual void filter(const string& word, bool exact, size_t col) {
 		for (size_t i = 0; i < _incl.size(); ++i) {
 			if (!_incl[i]) continue;
 			if (exact) {
@@ -90,13 +98,13 @@ public:
 		}
 	}
 
-	virtual void expand(const set<size_t>& cols) {
+	virtual void fill(const set<size_t>& cols) {
 		set<string> matching;
 		project(cols, &matching);
 		filter(cols, matching);
 	}
 
-	virtual void filter(const set<size_t>& cols, const set<string> vals) {
+	virtual void filter(const set<size_t>& cols, const set<string>& vals) {
 		for (size_t i = 0; i < _incl.size(); ++i) {
 			if (vals.count(get(cols, i))) {
 				_incl[i] = true;
@@ -117,6 +125,12 @@ public:
 	virtual void all(bool val) {
 		for (size_t i = 0; i < _incl.size(); ++i) {
 			_incl[i] = val;
+		}
+	}
+
+	virtual void trace() {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (_incl[i]) cout << get(i) << endl;
 		}
 	}
 

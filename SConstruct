@@ -4,6 +4,7 @@ tools = dict()
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
 tools['test_data_frame.cc'] = 'test_data_frame'
+tools['seasick.cc'] = 'seasick'
 
 PATH_TO_IB=".."
 common = Split(PATH_TO_IB + """/ib/libib.a
