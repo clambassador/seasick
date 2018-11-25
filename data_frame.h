@@ -1,6 +1,7 @@
 #ifndef __SEASICK__DATA_FRAME__H__
 #define __SEASICK__DATA_FRAME__H__
 
+#include "ib/fileutil.h"
 #include "ib/logger.h"
 #include "ib/tokenizer.h"
 
@@ -17,23 +18,53 @@ namespace seasick {
 class DataFrame {
 public:
 	DataFrame() {}
+	DataFrame(const map<string, size_t>& data) {
+	}
+	DataFrame(const set<string>& data) {
+	}
+	DataFrame(const vector<string>& data) {
+	}
 	DataFrame(const string& csv_file) {
 		init(csv_file);
 	}
 	virtual ~DataFrame() {}
 
 	virtual void init(const string& csv_file) {
-		_fin.open(csv_file);
-		size_t i = 0;
-		while (_fin.good()) {
-			string s;
-			getline(_fin, s);
-			if (s.empty() || _fin.eof()) break;
-			_breaks.push_back(i);
-			i += s.length() + 1;
-			_incl.push_back(true);
+		_fin.open(csv_file, ios::in | ios::binary);
+		bool parsed = false;
+		if (Fileutil::exists(csv_file + ".h")) {
+			ifstream fin(csv_file + ".h");
+			while (fin.good()) {
+				string s;
+				getline(fin, s);
+				if (s == "---") {
+					parsed = true;
+					break;
+				}
+				if (s.empty() || _fin.eof()) break;
+				if (_breaks.size()) assert(atoi(s.c_str()) > _breaks.back());
+				_breaks.push_back(atoi(s.c_str()));
+				_incl.push_back(true);
+			}
+		}
+
+		if (!parsed) {
+			size_t i = 0;
+			ofstream fout(csv_file + ".h");
+			while (_fin.good()) {
+				string s;
+				getline(_fin, s);
+				if (_fin.eof()) break;
+				if (s.empty()) continue;
+				_breaks.push_back(i);
+				fout << i << endl;
+				i += s.length() + 1;
+				_incl.push_back(true);
+			}
+			fout << "---" << endl;
 		}
 		_fin.clear();
+		Logger::debug("% rows", _breaks.size());
 	}
 
 	virtual string get(size_t row) {
@@ -133,6 +164,13 @@ public:
 			if (_incl[i]) cout << get(i) << endl;
 		}
 	}
+
+	virtual void save(ostream& out) {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (_incl[i]) out << get(i) << endl;
+		}
+	}
+
 
 protected:
 	DataFrame(const DataFrame&) {}

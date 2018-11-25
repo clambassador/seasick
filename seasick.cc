@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
 
 	vector<string> tokens;
 	seasick::DataFrame df(argv[1]);
+	seasick::DataFrame tmp;
 	for (size_t i = 2; i < argc; ++i) {
 		tokens.push_back(argv[i]);
 	}
@@ -41,6 +42,30 @@ int main(int argc, char** argv) {
 			set<size_t> pos;
 			Tokenizer::numset(tokens[cur++], &pos);
 			df.fill(pos);
+		} else if (op == "uniq") {
+			set<size_t> pos;
+			set<string> vals;
+			Tokenizer::numset(tokens[cur++], &pos);
+			df.project(pos, vals);
+			tmp.set(vals);
+		} else if (op == "project") {
+			set<size_t> pos;
+			vector<string> vals;
+			Tokenizer::numset(tokens[cur++], &pos);
+			df.project(pos, &vals);
+			tmp.set(vals);
+		} else if (op == "count") {
+			set<size_t> pos;
+			map<string, size_t> vals;
+			Tokenizer::numset(tokens[cur++], &pos);
+			df.project(pos, &vals);
+			tmp.set(vals);
+		} else if (op == "print") {
+			tmp.save(cout);
+		} else if (op == "save") {
+			string filename = tokens[cur++];
+			ofstream fout(filename);
+			tmp.save(fout);
 		} else assert(0);
 	}
 	df.trace();
