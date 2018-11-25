@@ -16,6 +16,5 @@ int main(int argc, char** argv) {
 	}
 
 	seasick::DataFrame df(argv[1]);
-	Logger::info("%", df.get(atoi(argv[2]), atoi(argv[3])));
 	return 0;
 }

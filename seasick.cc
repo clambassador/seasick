@@ -23,7 +23,6 @@ int main(int argc, char** argv) {
 	size_t cur = 0;
 	while (cur < tokens.size()) {
 		string op = tokens[cur++];
-		Logger::info("% % %", cur, tokens, op);
 		if (op == "filter") {
 			string word = tokens[cur++];
 			string match = tokens[cur++];
