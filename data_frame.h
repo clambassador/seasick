@@ -1,14 +1,16 @@
 #ifndef __SEASICK__DATA_FRAME__H__
 #define __SEASICK__DATA_FRAME__H__
 
-#include "ib/fileutil.h"
-#include "ib/logger.h"
-#include "ib/tokenizer.h"
-
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "ib/logger.h"
+#include "ib/tokenizer.h"
+#include "abstract_data_provider.h"
+#include "file_data_provider.h"
+#include "memory_data_provider.h"
 
 using namespace std;
 using namespace ib;
@@ -19,85 +21,42 @@ class DataFrame {
 public:
 	DataFrame() {}
 	DataFrame(const map<string, size_t>& data) {
+		init(data);
 	}
 	DataFrame(const set<string>& data) {
+		init(data);
 	}
 	DataFrame(const vector<string>& data) {
+		init(data);
 	}
 	DataFrame(const string& csv_file) {
-		init(csv_file);
+		_adp.reset(new FileDataProvider(csv_file));
+		_adp->init();
+		_incl.resize(_adp->rows(), true);
 	}
 	virtual ~DataFrame() {}
 
-	virtual void init(const string& csv_file) {
-		_fin.open(csv_file, ios::in | ios::binary);
-		bool parsed = false;
-		if (Fileutil::exists(csv_file + ".h")) {
-			ifstream fin(csv_file + ".h");
-			while (fin.good()) {
-				string s;
-				getline(fin, s);
-				if (s == "---") {
-					parsed = true;
-					break;
-				}
-				if (s.empty() || _fin.eof()) break;
-				if (_breaks.size()) assert(atoi(s.c_str()) > _breaks.back());
-				_breaks.push_back(atoi(s.c_str()));
-				_incl.push_back(true);
-			}
-		}
-
-		if (!parsed) {
-			size_t i = 0;
-			ofstream fout(csv_file + ".h");
-			while (_fin.good()) {
-				string s;
-				getline(_fin, s);
-				if (_fin.eof()) break;
-				if (s.empty()) continue;
-				_breaks.push_back(i);
-				fout << i << endl;
-				i += s.length() + 1;
-				_incl.push_back(true);
-			}
-			fout << "---" << endl;
-		}
-		_fin.clear();
-		Logger::debug("% rows", _breaks.size());
+	virtual void init(const map<string, size_t>& data) {
+		clear();
+		_adp.reset(new MemoryDataProvider(data));
+		_adp->init();
+		_incl.resize(_adp->rows(), true);
+	}
+	virtual void init(const set<string>& data) {
+		clear();
+		_adp.reset(new MemoryDataProvider(data));
+		_adp->init();
+		_incl.resize(_adp->rows(), true);
+	}
+	virtual void init(const vector<string>& data) {
+		clear();
+		_adp.reset(new MemoryDataProvider(data));
+		_adp->init();
+		_incl.resize(_adp->rows(), true);
 	}
 
-	virtual string get(size_t row) {
-		assert(row < _breaks.size());
-		_fin.clear();
-		_fin.seekg(_breaks[row]);
-		string retval;
-		getline(_fin, retval);
-		return retval;
-	}
-
-	virtual string get(size_t col, size_t row) {
-		assert(row < _breaks.size());
-		_fin.clear();
-		_fin.seekg(_breaks[row]);
-		string s, retval;
-		getline(_fin, s);
-		Tokenizer::fast_split(s, ',', col, &retval);
-		return retval;
-	}
-
-	virtual string get(const set<size_t>& cols, size_t row) {
-		assert(cols.size());
-		_fin.seekg(_breaks[row]);
-		_fin.clear();
-		string s, retval;
-		getline(_fin, s);
-		stringstream ss;
-		for (auto &x : cols) {
-			Tokenizer::fast_split(s, ',', x, &retval);
-			ss << retval << ',';
-		}
-		return ss.str().substr(0, ss.str().length() - 1);
+	virtual void clear() {
+		_incl.clear();
 	}
 
 	virtual void negate() {
@@ -110,11 +69,11 @@ public:
 		for (size_t i = 0; i < _incl.size(); ++i) {
 			if (!_incl[i]) continue;
 			if (exact) {
-				if (word != get(col, i)) {
+				if (word != _adp->get(col, i)) {
 					_incl[i] = 0;
 				}
 			} else {
-				if (get(col, i).find(word) ==
+				if (_adp->get(col, i).find(word) ==
 				    string::npos) {
 					_incl[i] = 0;
 				}
@@ -125,7 +84,21 @@ public:
 	virtual void project(const set<size_t>& cols, set<string>* out) {
 		for (size_t i = 0; i < _incl.size(); ++i) {
 			if (!_incl[i]) continue;
-			out->insert(get(cols, i));
+			out->insert(_adp->get(cols, i));
+		}
+	}
+
+	virtual void project(const set<size_t>& cols, vector<string>* out) {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (!_incl[i]) continue;
+			out->push_back(_adp->get(cols, i));
+		}
+	}
+
+	virtual void project(const set<size_t>& cols, map<string, size_t>* out) {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (!_incl[i]) continue;
+			(*out)[_adp->get(cols, i)]++;
 		}
 	}
 
@@ -137,7 +110,7 @@ public:
 
 	virtual void filter(const set<size_t>& cols, const set<string>& vals) {
 		for (size_t i = 0; i < _incl.size(); ++i) {
-			if (vals.count(get(cols, i))) {
+			if (vals.count(_adp->get(cols, i))) {
 				_incl[i] = true;
 			} else {
 				_incl[i] = false;
@@ -161,13 +134,14 @@ public:
 
 	virtual void trace() {
 		for (size_t i = 0; i < _incl.size(); ++i) {
-			if (_incl[i]) cout << get(i) << endl;
+			if (_incl[i]) cout << _adp->get(i) << endl;
 		}
 	}
 
 	virtual void save(ostream& out) {
+		assert(_incl.size() == _adp->rows());
 		for (size_t i = 0; i < _incl.size(); ++i) {
-			if (_incl[i]) out << get(i) << endl;
+			if (_incl[i]) out << _adp->get(i) << endl;
 		}
 	}
 
@@ -176,8 +150,7 @@ protected:
 	DataFrame(const DataFrame&) {}
 
 	vector<bool> _incl;
-	vector<size_t> _breaks;
-	ifstream _fin;
+	unique_ptr<AbstractDataProvider> _adp;
 };
 
 }  // namespace seasick
