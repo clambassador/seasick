@@ -98,6 +98,20 @@ public:
 		}
 	}
 
+	virtual void project(const set<size_t>& cols, vector<string>* out) {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (!_incl[i]) continue;
+			out->push_back(get(cols, i));
+		}
+	}
+
+	virtual void project(const set<size_t>& cols, map<string, int>* out) {
+		for (size_t i = 0; i < _incl.size(); ++i) {
+			if (!_incl[i]) continue;
+			(*out)[get(cols, i)]++;
+		}
+	}
+
 	virtual void fill(const set<size_t>& cols) {
 		set<string> matching;
 		project(cols, &matching);
