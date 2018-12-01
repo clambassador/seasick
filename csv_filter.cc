@@ -10,7 +10,10 @@ using namespace ib;
 using namespace std;
 
 int main(int argc, char** argv) {
-	assert(argc == 4);
+	if (argc != 3) {
+		Logger::error("usage: % allowfile colnum", argv[0]);
+		return -1;
+	}
 	size_t col = atoi(argv[2]);
 	assert(col != 0);
 	set<string> allowed;
@@ -28,7 +31,6 @@ int main(int argc, char** argv) {
 		string remain = s.substr(i);
 		size_t pcomma = remain.find(",");
 		string token = remain.substr(0, pcomma);
-		Logger::debug("check % is allowed", token);
 		if (allowed.count(token)) cout << s << endl;
 	}
 }
