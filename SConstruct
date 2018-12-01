@@ -3,6 +3,7 @@ import os
 tools = dict()
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
+tools['csv_filter.cc'] = 'csv_filter'
 tools['test_data_frame.cc'] = 'test_data_frame'
 tools['seasick.cc'] = 'seasick'
 
