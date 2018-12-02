@@ -1,6 +1,7 @@
 import os
 
 tools = dict()
+tools['csv_transpose.cc'] = 'csv_transpose'
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
 tools['csv_filter.cc'] = 'csv_filter'
