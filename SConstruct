@@ -2,6 +2,7 @@ import os
 
 tools = dict()
 tools['csv_transpose.cc'] = 'csv_transpose'
+tools['csv_join.cc'] = 'csv_join'
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
 tools['csv_stretch.cc'] = 'csv_stretch'

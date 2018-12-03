@@ -13,28 +13,84 @@
 using namespace std;
 using namespace ib;
 
-int do_join(int argc, char** argv, float percent) {
-	if (argc < 3) {
-		Logger::error("usage: % file1 file2 ...", argv[0]);
+int main(int argc, char** argv) {
+	if (argc < 4) {
+		Logger::error("usage: % file1 cols file2 cols", argv[0]);
 		return -1;
 	}
-	vector<unique_ptr<CSVTable>> ts;
-	for (int i = 1; i < argc; ++i) {
-		ts.resize(i);
-		ts.back().reset(new CSVTable());
-		ts.back()->load(argv[i]);
+	vector<unique_ptr<CSVTable<false>>> ts;
+	vector<set<size_t>> cols;
+	for (int i = 1; i < argc; i += 2) {
+		ts.push_back(unique_ptr<CSVTable<false>>());
+		ts.back().reset(new CSVTable<false>());
+		ts.back()->stream(argv[i]);
+		cols.push_back(set<size_t>());
+		Tokenizer::numset(argv[i + 1], &cols.back());
 	}
 
-	vector<set<size_t>> cols;
-	for (const auto &x : ts) {
-		cols.push_back(set<size_t>());
-		x->get_primary_keys(&cols.back());
-		if (cols.back().empty()) {
-			Logger::info("No candidate primary keys found.");
-			return 0;
+	while (true) {
+		vector<vector<string>> outpart;
+		vector<string> inpart;
+		for (size_t i = 0; i < ts.size(); ++i) {
+			string in, out;
+			while (true) {
+				vector<string> row;
+				ts[i]->get_next_row(&row);
+				Logger::info("i % row %", i, row);
+				if (!row.size()) break;
+				Tokenizer::join(row, ",", cols[i], &in, &out);
+				if (inpart.size()) Logger::info("% % %", in, inpart[0], in <
+					     inpart[0]);
+				if (inpart.size() && in < inpart[0]) continue;
+				if (inpart.size() && in > inpart[0]) {
+					ts[i]->set_next_row(row);
+					break;
+				}
+
+				if (inpart.size() == i) {
+					inpart.push_back(in);
+					outpart.push_back(vector<string>());
+				}
+				Logger::info("in and part % %", in, inpart[0]);
+				outpart.back().push_back(out);
+			}
+		}
+		if (!inpart.size()) return 0;
+		vector<vector<string>::iterator> iters;
+                for (size_t i = 0; i < outpart.size(); ++i) {
+			Logger::info("% % %", "log", i, outpart[i]);
+			if (outpart[i].empty()) {
+				continue;
+			}
+			iters.push_back(outpart[i].begin());
+		}
+		if (iters.size() != ts.size()) continue;
+
+		while (true) {
+			cout << inpart[0] << ",";
+			for (size_t i = 0; i < outpart.size(); ++i) {
+				assert(inpart[i] == inpart[0]);
+				if (iters[i]->length())
+					cout << *iters[i] << ",";
+			}
+			cout << endl;
+
+			bool finished = true;
+			for (size_t i = 0; i < outpart.size(); ++i) {
+				iters[i]++;
+				if (iters[i] == outpart[i].end()) {
+					iters[i] = outpart[i].begin();
+				} else {
+					finished = false;
+					break;
+				}
+			}
+			if (finished) break;
 		}
 	}
 
+
+/*
 	vector<size_t> found_col;
 	for (const auto &x : cols[0]) {
 		set<string> master_col;
@@ -82,28 +138,5 @@ int do_join(int argc, char** argv, float percent) {
 		return true;
 	} else {
 		return false;
-	}
-}
-
-int main(int argc, char** argv) {
-	if (argc < 3) {
-		Logger::error("usage: % file1 file2 ...", argv[0]);
-		return -1;
-	}
-	if (do_join(argc, argv, .95)) {
-		return 0;
-	}
-
-	Logger::info("No candidate column set found. Enter new matching threshold?");
-	string answer;
-	float percent = 0;
-	cin >> answer;
-	if (answer.empty()) return 0;
-	percent = atof(answer.c_str());
-	if (percent >= 1) percent /= 100;
-	if (percent == 0 || percent > 1) return 0;
-	if (!do_join(argc, argv, percent)) {
-		Logger::info("Sorry. Still no luck.");
-	}
-	return 0;
+	}*/
 }
