@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
 	size_t col = atoi(argv[2]);
 	assert(col != 0);
 	set<string> allowed;
-
+/* todo: use CSVTable instead for support */
 	Fileutil::read_file(argv[1], &allowed);
 	while (cin.good()) {
 		string s;

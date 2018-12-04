@@ -17,13 +17,15 @@ int main(int argc, char** argv) {
 
 	int col = atoi(argv[1]);
 	string str = argv[2];
+	bool exact = false;
+	if (argc == 4 && string(argv[3]) == "exact") exact = true;
 
 	while (cin.good()) {
 		string s, val;
 		getline(cin, s);
 		vector<string> p;
 		if (!Tokenizer::fast_split(s, ',', col, &val)) continue;
-
+		if (exact && val != str) continue;
 		if (val.find(str) == string::npos) continue;
 
 		cout << s << endl;
