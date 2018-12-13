@@ -12,6 +12,10 @@
 #include "ib/run.h"
 #include "ib/tokenizer.h"
 
+#define NEEDS(x)	if (cur - 1 + x >= tokens.size()) \
+				throw Logger::stringify("% needs % args",\
+							tokens[cur - 1], x);
+
 using namespace ib;
 using namespace std;
 
@@ -52,8 +56,7 @@ public:
 	        while (cur < tokens.size()) {
         	        string op = tokens[cur++];
                 	if (op == "filter") {
-				if (cur + 2 >= tokens.size())
-					throw "filter needs more args";
+				NEEDS(3);
 	                        string word = tokens[cur++];
         	                string match = tokens[cur++];
 	                        set<size_t> pos;
@@ -71,8 +74,7 @@ public:
                         	} else throw "bad filter: either in or ==";
 	                } else if (op == "negate") {
 	                } else if (op == "fill") {
-				if (cur + 1 >= tokens.size())
-					throw "fill needs more args";
+				NEEDS(2);
 				if (_var_to_file.count(tokens[cur]) == 0)
 					throw "can't find " + tokens[cur]
 						+ " in my file list.";
@@ -89,13 +91,12 @@ public:
 					<< tokens[cur + 1];
 				cur += 2;
 	                } else if (op == "uniq") {
-				command << "| cut -d, -f" << tokens[cur++]
-				        << " | sort | uniq ";
-	                } else if (op == "project") {
+				command << " | sort | uniq ";
+	                } else if (op == "project" || op == "cut") {
+				NEEDS(1);
 				command << "| cut -d, -f" << tokens[cur++];
 	                } else if (op == "filter_len") {
-				if (cur + 2 >= tokens.size())
-					throw "filter_len needs more args";
+				NEEDS(3)
 				command << "| csv_filter_len "
 				        << tokens[cur]
 					<< " "
@@ -121,6 +122,14 @@ public:
 		}
 
 	        return 0;
+	}
+
+	virtual void get_vars(string* s) {
+		stringstream ss;
+		for (auto &x : _var_to_file) {
+			ss << x.first << " \t";
+		}
+		*s = ss.str();
 	}
 protected:
 

@@ -12,6 +12,7 @@ tools['csv_filter.cc'] = 'csv_filter'
 tools['test_data_frame.cc'] = 'test_data_frame'
 tools['seasick.cc'] = 'seasick'
 tools['csick.cc'] = 'csick'
+tools['nsick.cc'] = 'nsick'
 
 PATH_TO_IB=".."
 common = Split(PATH_TO_IB + """/ib/libib.a
@@ -23,6 +24,8 @@ for i in range(0, 5):
     print ""
 
 libs = Split("""pthread
+	        ncurses
+		microhttpd
 	     """)
 env = Environment(CXX="ccache clang++ -pthread -I"+ PATH_TO_IB, CPPFLAGS="-D_FILE_OFFSET_BITS=64 -Wall -g --std=c++11 -pthread", LIBS=libs, CPPPATH=PATH_TO_IB)
 env['ENV']['TERM'] = 'xterm'
