@@ -29,10 +29,10 @@ int main(int argc, char** argv) {
 				stringstream ss;
 				ss << in << ",||";
 				for (auto &x : vals) {
-					ss << x << ",";
+					ss << x << "|";
 				}
-				cout << ss.str().substr(0, ss.str().length() - 1)
-				     << "||" << endl;
+				cout << ss.str()
+				     << "|" << endl;
 			}
 			unset = false;
 			cur = in;

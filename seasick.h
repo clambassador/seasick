@@ -71,6 +71,8 @@ public:
                         	} else throw "bad filter: either in or ==";
 	                } else if (op == "negate") {
 	                } else if (op == "fill") {
+				if (cur + 1 >= tokens.size())
+					throw "fill needs more args";
 				if (_var_to_file.count(tokens[cur]) == 0)
 					throw "can't find " + tokens[cur]
 						+ " in my file list.";
@@ -91,7 +93,19 @@ public:
 				        << " | sort | uniq ";
 	                } else if (op == "project") {
 				command << "| cut -d, -f" << tokens[cur++];
+	                } else if (op == "filter_len") {
+				if (cur + 2 >= tokens.size())
+					throw "filter_len needs more args";
+				command << "| csv_filter_len "
+				        << tokens[cur]
+					<< " "
+					<< filter_len_op(tokens[cur + 1])
+					<< " "
+					<< tokens[cur + 2];
+				cur += 3;
 	                } else if (op == "count") {
+			} else if (op == "|") {
+				continue;  // nop for console consistency
 		        } else throw "hmm, " + op + " doesn't seem like anything I support";
 	        }
 
@@ -109,6 +123,16 @@ public:
 	        return 0;
 	}
 protected:
+
+	virtual string filter_len_op(const string& op) {
+		if (op == "<") return "LT";
+		if (op == "!=") return "NEQ";
+		if (op == "==") return "EQ";
+		if (op == ">") return "GT";
+		if (op == "<=") return "LEQ";
+		if (op == ">=") return "GEQ";
+		throw "filter_len has bad op" + op;
+	}
 
 	virtual string temp_filename(const string& name) {
 		assert(Config::_()->gets("tmp").find("..") == string::npos);
