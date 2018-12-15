@@ -12,9 +12,12 @@
 #include "ib/run.h"
 #include "ib/tokenizer.h"
 
-#define NEEDS(x)	if (cur - 1 + x >= tokens.size()) \
-				throw Logger::stringify("% needs % args",\
-							tokens[cur - 1], x);
+#define NEEDS(x)	do {if (cur - 1 + x >= tokens.size()) \
+	throw Logger::stringify("% needs % args", \
+	tokens[cur - 1], x); } while(0);
+
+#define INT_NON_ZERO(x) do {stringstream ss; ss << tokens[x]; int i = 0; ss >> i; \
+	if (i == 0) { throw string(tokens[x] + " is NaN or 0");}} while(0);
 
 using namespace ib;
 using namespace std;
@@ -43,8 +46,11 @@ public:
 			_var_to_file[result] = temp_filename(result);
 			result = _var_to_file[result];
 		}
+		if (tokens[cur] == "cat") ++cur;
 		string start = tokens[cur++];
 		if (_var_to_file.count(start) == 0) {
+			if (!Fileutil::exists(start))
+				throw "dude, \"" + start + "\" isn't an actual file!";
 			_var_to_file[start] = start;
 		} else {
 			start = _var_to_file[start];
@@ -90,13 +96,21 @@ public:
 					<< " "
 					<< tokens[cur + 1];
 				cur += 2;
+	                } else if (op == "sort") {
+				NEEDS(1);
+				INT_NON_ZERO(cur);
+				command << " | sort -t, -k" << tokens[cur++];
+	                } else if (op == "nsort") {
+				NEEDS(1);
+				INT_NON_ZERO(cur);
+				command << " | sort -n -t, -k" << tokens[cur++];
 	                } else if (op == "uniq") {
 				command << " | sort | uniq ";
 	                } else if (op == "project" || op == "cut") {
 				NEEDS(1);
 				command << "| cut -d, -f" << tokens[cur++];
 	                } else if (op == "filter_len") {
-				NEEDS(3)
+				NEEDS(3);
 				command << "| csv_filter_len "
 				        << tokens[cur]
 					<< " "

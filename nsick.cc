@@ -30,8 +30,9 @@ class SeasickWidget : public XNav, public Text {
 	}
 
         virtual int render(IDisplay* win) {
-		string status = Logger::stringify("% % %", _xmin, _xcur,
-						  _xmax);
+		string status = Logger::stringify("% % % % %", _xmin, _xcur,
+						  _xmax, _prompt.length() +
+						  _xcur, _copy);
 		string vars;
 		_csick.get_vars(&vars);
                 win->write(11, 0, vars);
@@ -49,7 +50,7 @@ class SeasickWidget : public XNav, public Text {
         virtual int keypress(const Key& key) {
 		if (key.enter()) {
 			if (_text == "quit") return -1;
-			enter();
+			if (enter() == -1) return -1;
 			return 1;
 		}
 		_enter = false;
@@ -61,6 +62,12 @@ class SeasickWidget : public XNav, public Text {
                 else if (key.tab()) tab();
                 else if (key.navigation()) {
 			XNav::keypress(key);
+		}
+		else if (key.key() == CTRL('k')) {
+			truncate();
+		}
+		else if (key.key() == CTRL('u')) {
+			paste();
 		}
                 else if (key.key() >= 0 && key.key() < 256) {
                         insert(key, _xcur);
@@ -89,7 +96,7 @@ protected:
 		resize(_text.size());
 	}
 
-	virtual void enter() {
+	virtual int enter() {
 		if (_enter == true) {
 			_enter = false;
 			add_history(_text);
@@ -105,9 +112,11 @@ protected:
 			}
 			if (!error.empty()) {
 				_result = error;
+				if (_text == "q") return -1;
 			}
 			_enter = true;
 		}
+		return 0;
 	}
 
 	virtual void up() {
@@ -143,8 +152,21 @@ protected:
                 --_xmax;
         }
 
+        virtual void truncate() {
+		_copy = _text.substr(_xcur);
+                _text = _text.substr(0, _xcur);
+		_xmax = _xcur;
+        }
+
+        virtual void paste() {
+                _text = _text.substr(0, _xcur) + _copy + _text.substr(_xcur);
+		_xcur += _copy.length();
+		_xmax = _text.length();
+        }
+
         string _prompt;
 	string _result;
+	string _copy;
 	vector<string> _history;
 	size_t _history_pos;
 	Seasick _csick;
