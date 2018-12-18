@@ -1,0 +1,2 @@
+filter STR:keyword in|is|== COL:filter_col
+cut COLS:columns_to_cut

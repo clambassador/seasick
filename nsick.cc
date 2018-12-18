@@ -30,9 +30,10 @@ class SeasickWidget : public XNav, public Text {
 	}
 
         virtual int render(IDisplay* win) {
-		string status = Logger::stringify("% % % % %", _xmin, _xcur,
+		string status = Logger::stringify("% % % % % % %", _xmin, _xcur,
 						  _xmax, _prompt.length() +
-						  _xcur, _copy);
+						  _xcur, _copy, _hint,
+						  _choices);
 		string vars;
 		_csick.get_vars(&vars);
                 win->write(11, 0, vars);
@@ -130,8 +131,14 @@ protected:
 	}
 
 	virtual void tab() {
-		cout << _text;
-		//
+		vector<string> choices;
+		string hint;
+		_csick.tab_complete(_text.substr(0, _xcur),
+				     &choices, &hint);
+		_choices = choices;
+		_hint = hint;
+
+		// TODO: fill in text if choice has uniq prefix
 	}
 
         virtual void del() {
@@ -167,6 +174,8 @@ protected:
         string _prompt;
 	string _result;
 	string _copy;
+	vector<string> _choices;
+	string _hint;
 	vector<string> _history;
 	size_t _history_pos;
 	Seasick _csick;

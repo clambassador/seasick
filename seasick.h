@@ -26,16 +26,137 @@ namespace seasick {
 
 class Seasick {
 public:
-	Seasick() {}
+	Seasick() {
+		load_grammar();
+	}
 	virtual ~Seasick() {}
 
-	virtual int process(const string& cs, string* output) {
-		stringstream ss;
-		string tmp = Tokenizer::replace(cs, "==", "!!");
+	virtual void load_grammar() {
+		vector<string> rules;
+		vector<string> pipe;
+		pipe.push_back("|");
+		_commands["|"].reset(new Command(pipe));
+
+		Fileutil::read_file(Config::_()->gets("grammar"), &rules);
+
+		for (auto &x : rules) {
+			vector<string> tokens;
+			Tokenizer::split(x, " ", &tokens);
+			_commands[tokens[0]] = nullptr;
+			_commands[tokens[0]].reset(new Command(tokens));
+		}
+
+	}
+
+	virtual int tab_complete(const string& line,
+				 vector<string>* choices,
+				 string* hint) {
+		assert(choices);
+		choices->clear();
+		assert(hint);
+		*hint = "";
+
+		vector<string> tokens;
+		get_tokens(line, &tokens);
+		bool partial = false;
+		if (line.size()) partial = line.at(line.size() - 1) != ' ';
+
+		if (partial) {
+			assert(tokens.size());
+			string last = tokens.back();
+			tokens.pop_back();
+			tab_complete_impl(tokens, choices, hint);
+
+			// TODO filter choices for last;
+		} else {
+			tab_complete_impl(tokens, choices, hint);
+		}
+
+		return 0;
+	}
+protected:
+	virtual void tab_filevar(vector<string>* choices,
+				 string* hint) {
+		*hint = "file or variable";
+		// TODO choices;
+	}
+
+	virtual void tab_commands(vector<string>* choices,
+				  string* hint) {
+		*hint = "command";
+		for (auto &x : _commands) {
+			choices->push_back(x.first);
+		}
+	}
+
+	virtual void tab_complete_impl(const vector<string>& tokens,
+				       vector<string>* choices,
+				       string* hint) {
+	//	Logger::debug("tab tokens: %", tokens);
+		size_t start = 0;
+		if (tokens.size() && tokens.front() == "cat")
+			++start;
+
+		if (start >= tokens.size()) {
+			tab_filevar(choices, hint);
+			return;
+		}
+
+		for (size_t i = start; i < tokens.size(); ++i) {
+			if (tokens[i] == "=") {
+				start = i + 1;
+			}
+		}
+		if (start >= tokens.size()) {
+			tab_filevar(choices, hint);
+			return;
+		}
+
+		size_t cur = start + 1;
+		string command = "";
+		size_t arg = 0;
+		size_t nargs = 0;
+		while (cur < tokens.size()) {
+			if (command.empty()) {
+				command = tokens[cur];
+				if (!_commands.count(command)) {
+					command = "";
+					++cur;
+					continue;
+				}
+				nargs = _commands[command]->args();
+				arg = 0;
+				if (!nargs) command = "";
+			} else {
+				assert(nargs);
+				++arg;
+				if (arg == nargs) command = "";
+			}
+			++cur;
+		}
+		if (command.empty()) {
+			tab_commands(choices, hint);
+		} else {
+			assert(_commands.count(command));
+			_commands[command]->tab_complete(
+			    arg, choices, hint);
+		}
+	}
+
+	virtual void get_tokens(const string& str, vector<string>* tokens) {
+		assert(tokens);
+		tokens->clear();
+		string tmp = Tokenizer::replace(str, "==", "!!");
 		tmp = Tokenizer::replace(tmp, "=", " = ");
 		tmp = Tokenizer::replace(tmp, "!!", "==");
+		Tokenizer::split(tmp, " ", tokens);
+	}
+
+public:
+	virtual int process(const string& cs, string* output) {
+		stringstream ss;
 	        vector<string> tokens;
-		Tokenizer::split(tmp, " ", &tokens);
+		get_tokens(cs, &tokens);
 		size_t cur = 0;
 
 		if (tokens.empty()) throw "where are the tokens, man?";
@@ -97,7 +218,6 @@ public:
 					<< tokens[cur + 1];
 				cur += 2;
 	                } else if (op == "sort") {
-				NEEDS(1);
 				INT_NON_ZERO(cur);
 				command << " | sort -t, -k" << tokens[cur++];
 	                } else if (op == "nsort") {
@@ -147,6 +267,67 @@ public:
 	}
 protected:
 
+	class Command {
+	public:
+		Command(const vector<string>& rule) {
+			auto it = rule.begin();
+			_name = *it++;
+			set<string> types;
+			types.insert("STR");
+			types.insert("COL");
+			types.insert("COLS");
+			types.insert("INT");
+			while (it != rule.end()) {
+				bool val = false;
+				for (auto &x : types) {
+					if (it->substr(0, x.length()) == x) {
+						if (it->length() == x.length()) {
+							_hints.push_back(x);
+						} else if (it->at(x.length()) != ':')
+							continue;
+						else
+							_hints.push_back(it->substr(
+								x.length() + 1));
+						_args.push_back(x);
+						_options.push_back(vector<string>());
+						val = true;
+						break;
+					}
+				}
+				if (!val) {
+					_hints.push_back(*it);
+					_options.push_back(vector<string>());
+					Tokenizer::split(*it, "|",
+							 &(_options.back()));
+
+					_args.push_back("CHOICE");
+				}
+				++it;
+			}
+		}
+
+		virtual size_t args() const {
+			return _args.size();
+		}
+
+		virtual void tab_complete(size_t arg,
+					  vector<string>* choices,
+					  string* hint) const {
+			assert(_args.size() == _hints.size());
+			assert(_args.size() == _options.size());
+			assert(arg < _args.size());
+			*choices = _options.at(arg);
+			*hint = _hints.at(arg);
+		}
+
+
+	protected:
+		string _name;
+		vector<vector<string>> _options;
+		vector<string> _args;
+		vector<string> _hints;
+	};
+
 	virtual string filter_len_op(const string& op) {
 		if (op == "<") return "LT";
 		if (op == "!=") return "NEQ";
@@ -164,6 +345,7 @@ protected:
 	}
 
 	map<string, string> _var_to_file;
+	map<string, unique_ptr<Command>> _commands;
 
 };
 
