@@ -40,6 +40,7 @@ public:
 		Fileutil::read_file(Config::_()->gets("grammar"), &rules);
 
 		for (auto &x : rules) {
+			if (x.empty()) continue;
 			vector<string> tokens;
 			Tokenizer::split(x, " ", &tokens);
 			_commands[tokens[0]] = nullptr;

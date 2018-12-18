@@ -135,6 +135,8 @@ protected:
 		string hint;
 		_csick.tab_complete(_text.substr(0, _xcur),
 				     &choices, &hint);
+		tab_complete_insert(Tokenizer::longest_prefix(choices));
+		if (choices.size() == 1) insert(" ");
 		_choices = choices;
 		_hint = hint;
 
@@ -163,6 +165,25 @@ protected:
 		_copy = _text.substr(_xcur);
                 _text = _text.substr(0, _xcur);
 		_xmax = _xcur;
+        }
+
+        virtual void tab_complete_insert(const string& data) {
+		if (data.empty()) return;
+		if (_xcur && _text[_xcur - 1] != ' ') {
+			size_t i = _xcur - 1;
+			while (i != 0 && _text[i] != ' ') --i;
+			insert(data.substr(_xcur - 1 - i));
+		} else {
+			insert(data);
+		}
+        }
+
+        virtual void insert(const string& data) {
+		if (data.empty()) return;
+
+                _text = _text.substr(0, _xcur) + data + _text.substr(_xcur);
+		_xcur += data.length();
+		_xmax = _text.length();
         }
 
         virtual void paste() {
