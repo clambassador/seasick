@@ -81,9 +81,13 @@ public:
 	}
 protected:
 	virtual void tab_filevar(vector<string>* choices,
-				 string* hint) {
+				 string* hint) const {
 		*hint = "file or variable";
-		// TODO choices;
+		for (const auto &x : _var_to_file) {
+			choices->push_back(x.first);
+		}
+		Fileutil::list_directory(".", ".csv", choices);
+		// TODO: add dirs
 	}
 
 	virtual void tab_commands(vector<string>* choices,

@@ -139,8 +139,6 @@ protected:
 		if (choices.size() == 1) insert(" ");
 		_choices = choices;
 		_hint = hint;
-
-		// TODO: fill in text if choice has uniq prefix
 	}
 
         virtual void del() {
@@ -170,8 +168,8 @@ protected:
         virtual void tab_complete_insert(const string& data) {
 		if (data.empty()) return;
 		if (_xcur && _text[_xcur - 1] != ' ') {
-			size_t i = _xcur - 1;
-			while (i != 0 && _text[i] != ' ') --i;
+			int i = _xcur - 1;
+			while (i >= 0 && _text[i] != ' ') --i;
 			insert(data.substr(_xcur - 1 - i));
 		} else {
 			insert(data);
