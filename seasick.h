@@ -65,9 +65,13 @@ public:
 			assert(tokens.size());
 			string last = tokens.back();
 			tokens.pop_back();
-			tab_complete_impl(tokens, choices, hint);
-
-			// TODO filter choices for last;
+			vector<string> all;
+			tab_complete_impl(tokens, &all, hint);
+			for (auto &x : all) {
+				if (x.find(last) == 0) {
+					choices->push_back(x);
+				}
+			}
 		} else {
 			tab_complete_impl(tokens, choices, hint);
 		}
