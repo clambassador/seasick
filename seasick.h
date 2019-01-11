@@ -32,6 +32,18 @@ public:
 	virtual ~Seasick() {}
 
 	virtual void load_grammar() {
+		map<string, string> types;
+		vector<string> type_list;
+		Config::_()->get_all("type", &types);
+		assert(types.size());
+		for (auto &x : types) {
+			vector<string> type;
+			Tokenizer::split(x.second, ",", &type);
+			assert(type.size());
+			_types[x.first] = type;
+			type_list.push_back(x.first);
+		}
+
 		vector<string> rules;
 		vector<string> pipe;
 		pipe.push_back("|");
@@ -44,9 +56,9 @@ public:
 			vector<string> tokens;
 			Tokenizer::split(x, " ", &tokens);
 			_commands[tokens[0]] = nullptr;
-			_commands[tokens[0]].reset(new Command(tokens));
+			_commands[tokens[0]].reset(new Command(tokens,
+							       type_list));
 		}
-
 	}
 
 	virtual int tab_complete(const string& line,
@@ -79,6 +91,17 @@ public:
 
 		return 0;
 	}
+
+	virtual vector<string> get_type(const string& command) {
+		vector<string> tokens;
+		vector<string> retval;
+		get_tokens(command, &tokens);
+		if (tokens.empty()) return vector<string>();
+		tokens.pop_back();
+		get_type(tokens, &retval);
+		return retval;
+	}
+
 protected:
 	virtual void tab_filevar(vector<string>* choices,
 				 string* hint) const {
@@ -96,6 +119,65 @@ protected:
 		for (auto &x : _commands) {
 			choices->push_back(x.first);
 		}
+	}
+
+	virtual void refine_type(vector<string>* type, const string& cols) {
+		vector<string> vals;
+		vector<string> result;
+		Tokenizer::split(cols, ",", &vals);
+		assert(vals.size());
+		for (auto &x : vals) {
+			size_t i = 0;
+			if (Tokenizer::extract(x, "%", &i) && (i != 0)) {
+				result.push_back((*type)[i - 1]);
+			} else {
+				for (auto &y : *type) {
+					if (y == x) {
+						result.push_back(x);
+						break;
+					}
+				}
+			}
+		}
+		// TODO: sort result based on type. this can be ib
+		*type = result;
+	}
+
+	virtual int process_type(const vector<string>& tokens,
+				 size_t* cur,
+				 vector<string>* type) {
+		string command = tokens[*cur];
+		size_t args = _commands[command]->args();
+
+		// TODO: will not work on enter, add a nop for this
+		if (*cur + args >= tokens.size()) return -1;
+		if (command == "cut" || command == "project") {
+			refine_type(type, tokens[*cur + 1]);
+		} else if (command == "type") {
+			if (_types.count(tokens[*cur + 1])) {
+				*type = _types[tokens[*cur + 1]];
+				_var_to_type[get_start(tokens)] = *type;
+			}
+		}
+		*cur += args + 1;
+		return 0;
+	}
+
+	virtual int get_type(const vector<string>& tokens,
+			     vector<string>* type) {
+		assert(type);
+		type->clear();
+		size_t cur = 0;
+		string start = get_start(tokens, &cur);
+		if (start.empty()) return -1;
+		++cur;
+		if (_var_to_type.count(start))
+			*type = _var_to_type[start];
+
+		while (cur < tokens.size()) {
+			if (process_type(tokens, &cur, type)) return -1;
+		}
+		return 0;
 	}
 
 	virtual void tab_complete_impl(const vector<string>& tokens,
@@ -120,6 +202,7 @@ protected:
 			tab_filevar(choices, hint);
 			return;
 		}
+
 
 		size_t cur = start + 1;
 		string command = "";
@@ -147,8 +230,10 @@ protected:
 			tab_commands(choices, hint);
 		} else {
 			assert(_commands.count(command));
+			vector<string> type;
+			get_type(tokens, &type);
 			_commands[command]->tab_complete(
-			    arg, choices, hint);
+			    arg, choices, hint, type);
 		}
 	}
 
@@ -182,6 +267,26 @@ public:
 		return 0;
 	}
 
+	virtual string get_start(const string& command) {
+	        vector<string> tokens;
+		get_tokens(command, &tokens);
+		return get_start(tokens);
+	}
+
+	virtual string get_start(const vector<string>& tokens) {
+		size_t cur = 0;
+		return get_start(tokens, &cur);
+	}
+
+	virtual string get_start(const vector<string>& tokens, size_t* cur) {
+		if (tokens.empty()) return "";
+		if (tokens.size() > 2 && tokens[1] == "=") {
+			*cur = 2;
+		}
+		if (tokens[*cur] == "cat") ++*cur;
+		return tokens[*cur];
+	}
+
 	virtual int process(const string& cs, string* output,
 			    string* result, string* error,
 			    size_t* parsed) {
@@ -205,6 +310,7 @@ public:
 		}
 		if (tokens[cur] == "cat") ++cur;
 		string start = tokens[cur++];
+		assert(start == get_start(cs));
 		*parsed = cur;
 		if (_var_to_file.count(start) == 0) {
 			if (!Fileutil::exists(start)) {
@@ -297,6 +403,9 @@ public:
 					<< " "
 					<< tokens[cur + 2];
 				cur += 3;
+	                } else if (op == "type") {
+				NEEDS(1);
+				++cur;
 	                } else if (op == "count") {
 			} else if (op == "|") {
 				continue;  // nop for console consistency
@@ -326,10 +435,14 @@ protected:
 
 	class Command {
 	public:
-		Command(const vector<string>& rule) {
+		Command(const vector<string>& rule)
+			: Command(rule, vector<string>()) {}
+		Command(const vector<string>& rule,
+			const vector<string>& type_list) {
 			auto it = rule.begin();
 			_name = *it++;
 			set<string> types;
+			types.insert("TYPE");
 			types.insert("STR");
 			types.insert("COL");
 			types.insert("COLS");
@@ -346,7 +459,10 @@ protected:
 							_hints.push_back(it->substr(
 								x.length() + 1));
 						_args.push_back(x);
-						_options.push_back(vector<string>());
+						if (x == "TYPE")
+							_options.push_back(type_list);
+						else
+							_options.push_back(vector<string>());
 						val = true;
 						break;
 					}
@@ -356,7 +472,6 @@ protected:
 					_options.push_back(vector<string>());
 					Tokenizer::split(*it, "|",
 							 &(_options.back()));
-
 					_args.push_back("CHOICE");
 				}
 				++it;
@@ -369,11 +484,15 @@ protected:
 
 		virtual void tab_complete(size_t arg,
 					  vector<string>* choices,
-					  string* hint) const {
+					  string* hint,
+					  const vector<string>& type) const {
 			assert(_args.size() == _hints.size());
 			assert(_args.size() == _options.size());
 			assert(arg < _args.size());
 			*choices = _options.at(arg);
+			if (_args.at(arg) == "COL" || _args.at(arg) == "COLS") {
+				*choices = type;
+			}
 			*hint = _hints.at(arg);
 		}
 
@@ -403,6 +522,8 @@ protected:
 
 	map<string, string> _var_to_file;
 	map<string, unique_ptr<Command>> _commands;
+	map<string, vector<string>> _var_to_type;
+	map<string, vector<string>> _types;
 
 };
 

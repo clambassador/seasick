@@ -11,4 +11,4 @@ join FILEVAR:data_1 COLS:keys_1 FILEVAR:data_2 COLS:keys_2
 transpose COL:col_to_move
 stretch COL:col_to_stretch
 stretchuniq COL:col_to_stretch
-
+type TYPE
