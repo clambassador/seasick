@@ -23,7 +23,7 @@ void run(const vector<string>& commands) {
 		for (auto &x : commands) {
 			cur = x;
 			string out;
-			csick.process(x, &out);
+			csick.enter_complete(x, &out);
 			if (!out.empty()) {
 				cout << out;
 			}
@@ -47,7 +47,7 @@ void run() {
 		cout << prompt << flush;
 		getline(cin, s);
 		if (s.empty()) continue;
-		csick.process(s, &out);
+		csick.enter_complete(s, &out);
 		if (!out.empty()) cout << out;
 		} catch (string ex) {
 			Logger::error("\"%\" from %",

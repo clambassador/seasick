@@ -105,7 +105,7 @@ protected:
 		} else {
 			string error;
 			try {
-				_csick.process(_text, &_result);
+				_csick.enter_complete(_text, &_result);
 			} catch (string s) {
 				error = s;
 			} catch (const char* s) {

@@ -162,25 +162,55 @@ protected:
 	}
 
 public:
-	virtual int process(const string& cs, string* output) {
+	virtual int enter_complete(const string& cs, string* output) {
+		string command = "";
+		string error = "";
+		string result = "";
+		size_t pos = 0;
+
+		if (process(cs, &command, &result, &error, &pos)) {
+			throw error;
+		}
+
+		Run run(command);
+		run();
+		if (result.empty()) {
+			*output = run.read();
+		} else {
+			run.redirect(result);
+		}
+		return 0;
+	}
+
+	virtual int process(const string& cs, string* output,
+			    string* result, string* error,
+			    size_t* parsed) {
 		stringstream ss;
 	        vector<string> tokens;
 		get_tokens(cs, &tokens);
 		size_t cur = 0;
+		*parsed = 0;
 
-		if (tokens.empty()) throw "where are the tokens, man?";
-		string result = "";
+		if (tokens.empty()) {
+			*error = "where are the tokens, man?";
+			return -1;
+		}
+
+		*result = "";
 		if (tokens.size() > 2 && tokens[1] == "=") {
 			cur = 2;
-			result = tokens[0];
-			_var_to_file[result] = temp_filename(result);
-			result = _var_to_file[result];
+			*result = tokens[0];
+			_var_to_file[*result] = temp_filename(*result);
+			*result = _var_to_file[*result];
 		}
 		if (tokens[cur] == "cat") ++cur;
 		string start = tokens[cur++];
+		*parsed = cur;
 		if (_var_to_file.count(start) == 0) {
-			if (!Fileutil::exists(start))
-				throw "dude, \"" + start + "\" isn't an actual file!";
+			if (!Fileutil::exists(start)) {
+				*error = "dude, \"" + start + "\" isn't an actual file!";
+				return -1;
+			}
 			_var_to_file[start] = start;
 		} else {
 			start = _var_to_file[start];
@@ -197,29 +227,49 @@ public:
         	                string match = tokens[cur++];
 	                        set<size_t> pos;
         	                Tokenizer::numset(tokens[cur++], &pos);
-				if (pos.size() == 0)
-					throw "filter needs a column";
-				if (pos.size() != 1)
-					throw "filter only works for one col---for now!";
+				if (pos.size() == 0) {
+					*error = "filter needs a column";
+					*parsed = cur;
+					return -1;
+				}
+				if (pos.size() != 1) {
+					*error = "filter only works for one col---for now!";
+					*parsed = cur;
+					return -1;
+				}
                         	if (match == "in") {
 					command << "| csv_grep " << *pos.begin()
 					        << " " << word;
         	                } else if (match == "==") {
 					command << "| csv_grep " << *pos.begin()
 					        << " " << word << " exact ";
-                        	} else throw "bad filter: either in or ==";
+                        	} else {
+					*error = "bad filter: either in or ==";
+					*parsed = cur;
+					return -1;
+				}
 	                } else if (op == "negate") {
 	                } else if (op == "fill") {
 				NEEDS(2);
-				if (_var_to_file.count(tokens[cur]) == 0)
-					throw "can't find " + tokens[cur]
-						+ " in my file list.";
-				if (_var_to_file[tokens[cur]].empty())
-					throw "filename for " + tokens[cur]
-					+ " is empty.";
-				if (!Fileutil::exists(_var_to_file[tokens[cur]]))
-					throw "can't find a file at "
+				if (_var_to_file.count(tokens[cur]) == 0) {
+					*error = "can't find " + tokens[cur]
+						 + " in my file list.";
+					*parsed = cur;
+					return -1;
+				}
+
+				if (_var_to_file[tokens[cur]].empty()) {
+					*error = "filename for " + tokens[cur]
+						 + " is empty.";
+					*parsed = cur;
+					return -1;
+				}
+				if (!Fileutil::exists(_var_to_file[tokens[cur]])) {
+					*error = "can't find a file at "
 					    + _var_to_file[tokens[cur]];
+					*parsed = cur;
+					return -1;
+				}
 
 				command << "| csv_filter "
 				        << _var_to_file[tokens[cur]]
@@ -250,20 +300,18 @@ public:
 	                } else if (op == "count") {
 			} else if (op == "|") {
 				continue;  // nop for console consistency
-		        } else throw "hmm, " + op + " doesn't seem like anything I support";
+		        } else {
+				*error = "hmm, " + op + " doesn't seem like anything I support";
+				*parsed = cur;
+				return -1;
+			}
 	        }
 
-		if (result.empty()) {
+		if (result->empty()) {
+			// TODO: set the type to what remains
 			command << " | head -n 200";
 		}
-		Run run(command.str());
-		run();
-		if (result.empty()) {
-			*output = run.read();
-		} else {
-			run.redirect(result);
-		}
-
+		*output = command.str();
 	        return 0;
 	}
 
