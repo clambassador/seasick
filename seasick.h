@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ib/config.h"
+#include "ib/containers.h"
 #include "ib/fileutil.h"
 #include "ib/logger.h"
 #include "ib/run.h"
@@ -127,8 +128,8 @@ protected:
 		Tokenizer::split(cols, ",", &vals);
 		assert(vals.size());
 		for (auto &x : vals) {
-			size_t i = 0;
-			if (Tokenizer::extract(x, "%", &i) && (i != 0)) {
+			size_t i = atoi(x.c_str());
+			if (i != 0) {
 				result.push_back((*type)[i - 1]);
 			} else {
 				for (auto &y : *type) {
@@ -139,8 +140,7 @@ protected:
 				}
 			}
 		}
-		// TODO: sort result based on type. this can be ib
-		*type = result;
+		Containers::reorder_vector(*type, result, type);
 	}
 
 	virtual int process_type(const vector<string>& tokens,
