@@ -30,11 +30,17 @@ class SeasickWidget : public XNav, public Text {
 	}
 
         virtual int render(IDisplay* win) {
-		string status = Logger::stringify("% % % % % % % % %", _xmin, _xcur,
+		vector<string> test;
+		test.push_back("one");
+		test.push_back("two");
+		test.push_back("three");
+		string status = Logger::stringify("% % % % % % % % % %", _xmin, _xcur,
 						  _xmax, _prompt.length() +
 						  _xcur, _copy, _hint,
 						  _choices,
 						  _csick.get_type(cur_text()),
+						  _csick.typeset_column(test,
+									"three,one"),
 						  _csick.get_start(cur_text()));
 		string vars;
 		_csick.get_vars(&vars);
@@ -141,7 +147,9 @@ protected:
 		string hint;
 		_csick.tab_complete(cur_text(),
 				    &choices, &hint);
-		tab_complete_insert(Tokenizer::longest_prefix(choices));
+		tab_complete_insert(
+			Tokenizer::longest_prefix(
+				Containers::unique(choices)));
 		if (choices.size() == 1) insert(" ");
 		_choices = choices;
 		_hint = hint;

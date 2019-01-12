@@ -80,19 +80,20 @@ public:
 			string last = tokens.back();
 			tokens.pop_back();
 			vector<string> all;
-			tab_complete_impl(tokens, &all, hint);
+			tab_complete_impl(tokens, last, &all, hint);
 			for (auto &x : all) {
 				if (x.find(last) == 0) {
 					choices->push_back(x);
 				}
 			}
 		} else {
-			tab_complete_impl(tokens, choices, hint);
+			tab_complete_impl(tokens, "", choices, hint);
 		}
 
 		return 0;
 	}
 
+	virtual map<string, vector<string>> get_types() { return _var_to_type; }
 	virtual vector<string> get_type(const string& command) {
 		vector<string> tokens;
 		vector<string> retval;
@@ -149,7 +150,6 @@ protected:
 		string command = tokens[*cur];
 		size_t args = _commands[command]->args();
 
-		// TODO: will not work on enter, add a nop for this
 		if (*cur + args >= tokens.size()) return -1;
 		if (command == "cut" || command == "project") {
 			refine_type(type, tokens[*cur + 1]);
@@ -157,10 +157,46 @@ protected:
 			if (_types.count(tokens[*cur + 1])) {
 				*type = _types[tokens[*cur + 1]];
 				_var_to_type[get_start(tokens)] = *type;
+				// TODO: if after a cut, this is notright
 			}
 		}
 		*cur += args + 1;
 		return 0;
+	}
+
+	virtual vector<string> get_type(const vector<string>& tokens,
+					size_t pos) {
+		assert(tokens.size() > pos);
+		vector<string> temp;
+		for (size_t i = 0; i < pos; ++i) {
+			temp.push_back(tokens[i]);
+		}
+		vector<string> retval;
+		get_type(temp, &retval);
+		return retval;
+	}
+public:
+	virtual string typeset_column(const vector<string>& type,
+				      const string& columns) {
+		if (type.empty()) return columns;
+		stringstream ss;
+		map<string, size_t> lookup;
+		vector<string> pieces;
+		Containers::lookup_vector(type, &lookup);
+		Tokenizer::split(columns, ",", &pieces);
+
+		for (auto &x: pieces) {
+			size_t col = atoi(x.c_str());
+			if (col) ss << col << ",";
+			else {
+				if (!lookup.count(x))
+					throw Logger::stringify(
+					    "no match for % in % while %",
+					    x, type, columns);
+				ss << lookup[x] + 1 << ",";
+			}
+		}
+		return ss.str().substr(0, ss.str().length() - 1);
 	}
 
 	virtual int get_type(const vector<string>& tokens,
@@ -181,6 +217,7 @@ protected:
 	}
 
 	virtual void tab_complete_impl(const vector<string>& tokens,
+				       const string& last,
 				       vector<string>* choices,
 				       string* hint) {
 	//	Logger::debug("tab tokens: %", tokens);
@@ -233,7 +270,7 @@ protected:
 			vector<string> type;
 			get_type(tokens, &type);
 			_commands[command]->tab_complete(
-			    arg, choices, hint, type);
+			    arg, last, choices, hint, type);
 		}
 	}
 
@@ -248,12 +285,13 @@ protected:
 
 public:
 	virtual int enter_complete(const string& cs, string* output) {
+
 		string command = "";
 		string error = "";
 		string result = "";
 		size_t pos = 0;
 
-		if (process(cs, &command, &result, &error, &pos)) {
+		if (process(cs + " done", &command, &result, &error, &pos)) {
 			throw error;
 		}
 
@@ -280,6 +318,7 @@ public:
 
 	virtual string get_start(const vector<string>& tokens, size_t* cur) {
 		if (tokens.empty()) return "";
+		if (tokens.size() == 2 && tokens[1] == "=") return "";
 		if (tokens.size() > 2 && tokens[1] == "=") {
 			*cur = 2;
 		}
@@ -293,10 +332,11 @@ public:
 		stringstream ss;
 	        vector<string> tokens;
 		get_tokens(cs, &tokens);
+		vector<string> end_type = get_type(cs);
 		size_t cur = 0;
 		*parsed = 0;
 
-		if (tokens.empty()) {
+		if (tokens.empty() || tokens[0] == "done") {
 			*error = "where are the tokens, man?";
 			return -1;
 		}
@@ -305,6 +345,7 @@ public:
 		if (tokens.size() > 2 && tokens[1] == "=") {
 			cur = 2;
 			*result = tokens[0];
+			_var_to_type[*result] = end_type;
 			_var_to_file[*result] = temp_filename(*result);
 			*result = _var_to_file[*result];
 		}
@@ -393,7 +434,11 @@ public:
 				command << " | sort | uniq ";
 	                } else if (op == "project" || op == "cut") {
 				NEEDS(1);
-				command << "| cut -d, -f" << tokens[cur++];
+				// TODO translate tokens to columns
+				command << "| cut -d, -f"
+				        << typeset_column(get_type(tokens, cur),
+							  tokens[cur]);
+				++cur;
 	                } else if (op == "filter_len") {
 				NEEDS(3);
 				command << "| csv_filter_len "
@@ -409,7 +454,9 @@ public:
 	                } else if (op == "count") {
 			} else if (op == "|") {
 				continue;  // nop for console consistency
-		        } else {
+		        } else if (op == "done") {
+				assert(cur == tokens.size());
+			} else {
 				*error = "hmm, " + op + " doesn't seem like anything I support";
 				*parsed = cur;
 				return -1;
@@ -417,9 +464,9 @@ public:
 	        }
 
 		if (result->empty()) {
-			// TODO: set the type to what remains
 			command << " | head -n 200";
 		}
+
 		*output = command.str();
 	        return 0;
 	}
@@ -483,6 +530,7 @@ protected:
 		}
 
 		virtual void tab_complete(size_t arg,
+					  const string& last,
 					  vector<string>* choices,
 					  string* hint,
 					  const vector<string>& type) const {
@@ -491,7 +539,17 @@ protected:
 			assert(arg < _args.size());
 			*choices = _options.at(arg);
 			if (_args.at(arg) == "COL" || _args.at(arg) == "COLS") {
-				*choices = type;
+				vector<string> pieces;
+				Tokenizer::split(last, ",", &pieces);
+				if (pieces.size()) pieces.pop_back();
+				string prefix = Tokenizer::join(pieces, ",");
+				if (!prefix.empty()) prefix += ",";
+				for (auto &x: type) {
+					choices->push_back(prefix + x);
+					for (auto &y: type) {
+						choices->push_back(prefix + x + "," + y);
+					}
+				}
 			}
 			*hint = _hints.at(arg);
 		}
