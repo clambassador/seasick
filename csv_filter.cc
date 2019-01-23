@@ -5,6 +5,8 @@
 
 #include "ib/fileutil.h"
 #include "ib/logger.h"
+#include "ib/tokenizer.h"
+#include "ib/csv_table.h"
 
 using namespace ib;
 using namespace std;
@@ -14,23 +16,19 @@ int main(int argc, char** argv) {
 		Logger::error("usage: % allowfile colnum", argv[0]);
 		return -1;
 	}
-	size_t col = atoi(argv[2]);
-	assert(col != 0);
+	set<size_t> cols;
+	Tokenizer::numset(argv[2], &cols, -1);
+	assert(cols.size());
 	set<string> allowed;
-/* todo: use CSVTable instead for support */
 	Fileutil::read_file(argv[1], &allowed);
-	while (cin.good()) {
-		string s;
-		getline(cin, s);
-		size_t cur = col - 1;
-		size_t i = 0;
-		for (; i < s.length(); ++i) {
-			if (!cur) break;
-			if (s[i] == ',') --cur;
+	unique_ptr<CSVTable<false>> table;
+	table.reset(new CSVTable<false>());
+	table->stream();
+	vector<string> row;
+	while (table->get_next_row(&row)) {
+		if (allowed.count(Tokenizer::join(row, ",", cols))) {
+			cout << Tokenizer::join(row, ",") << endl;
 		}
-		string remain = s.substr(i);
-		size_t pcomma = remain.find(",");
-		string token = remain.substr(0, pcomma);
-		if (allowed.count(token)) cout << s << endl;
+		row.clear();
 	}
 }

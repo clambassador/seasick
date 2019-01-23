@@ -86,7 +86,7 @@ protected:
 		for (const auto &x : _var_to_file) {
 			choices->push_back(x.first);
 		}
-		Fileutil::list_directory(".", ".csv", choices);
+	//	Fileutil::list_directory(".", ".csv", choices);
 		// TODO: add dirs
 	}
 
