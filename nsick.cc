@@ -30,10 +30,18 @@ class SeasickWidget : public XNav, public Text {
 	}
 
         virtual int render(IDisplay* win) {
-		string status = Logger::stringify("% % % % % % %", _xmin, _xcur,
+		vector<string> test;
+		test.push_back("one");
+		test.push_back("two");
+		test.push_back("three");
+		string status = Logger::stringify("% % % % % % % % % %", _xmin, _xcur,
 						  _xmax, _prompt.length() +
 						  _xcur, _copy, _hint,
-						  _choices);
+						  _choices,
+						  _csick.get_type(cur_text()),
+						  _csick.typeset_column(test,
+									"three,one"),
+						  _csick.get_start(cur_text()));
 		string vars;
 		_csick.get_vars(&vars);
                 win->write(11, 0, vars);
@@ -47,6 +55,10 @@ class SeasickWidget : public XNav, public Text {
         virtual int close() {
                 return 0;
         }
+
+	virtual string cur_text() {
+		return _text.substr(0, _xcur);
+	}
 
         virtual int keypress(const Key& key) {
 		if (key.enter()) {
@@ -105,7 +117,7 @@ protected:
 		} else {
 			string error;
 			try {
-				_csick.process(_text, &_result);
+				_csick.enter_complete(_text, &_result);
 			} catch (string s) {
 				error = s;
 			} catch (const char* s) {
@@ -133,9 +145,11 @@ protected:
 	virtual void tab() {
 		vector<string> choices;
 		string hint;
-		_csick.tab_complete(_text.substr(0, _xcur),
-				     &choices, &hint);
-		tab_complete_insert(Tokenizer::longest_prefix(choices));
+		_csick.tab_complete(cur_text(),
+				    &choices, &hint);
+		tab_complete_insert(
+			Tokenizer::longest_prefix(
+				Containers::unique(choices)));
 		if (choices.size() == 1) insert(" ");
 		_choices = choices;
 		_hint = hint;
