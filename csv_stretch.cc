@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 		if (unset || cur != in) {
 			if (vals.size()) {
 				stringstream ss;
-				ss << in << ",||";
+				ss << cur << ",||";
 				for (auto &x : vals) {
 					ss << x << "|";
 				}
@@ -39,5 +39,14 @@ int main(int argc, char** argv) {
 			vals.clear();
 		}
 		vals.insert(out);
+	}
+	if (!unset) {
+		stringstream ss;
+		ss << cur << ",||";
+		for (auto &x : vals) {
+			ss << x << "|";
+		}
+		cout << ss.str()
+			<< "|" << endl;
 	}
 }
