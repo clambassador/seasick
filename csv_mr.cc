@@ -27,7 +27,8 @@ string count(const vector<string>& input) {
 	return Logger::stringify(input.size());
 }
 
-string morethan(size_t amount, const vector<string>& input) {
+string morethan(string param, const vector<string>& input) {
+	size_t amount = atoi(param.c_str());
 	if (input.size() > amount)
 		return Logger::stringify(input.size());
 	else throw "skip";
@@ -93,9 +94,13 @@ int main(int argc, char** argv) {
 	operations["vectorize"] = bind(&vectorize, _1);
 	operations["unique"] = bind(&unique, _1);
 	operations["count"] = bind(&count, _1);
-	operations["morethan"] = bind(&morethan, atoi(argv[4]), _1);
+
 	operations["unique_count"] = bind(&unique_count, _1);
 	operations["uniqcount"] = bind(&unique_count, _1);
+
+	if (argc > 4) {
+		operations["morethan"] = bind(&morethan, argv[4], _1);
+	}
 
 	set<size_t> keycols;
 	set<size_t> valcols;
@@ -125,7 +130,8 @@ int main(int argc, char** argv) {
 			if (vals.size()) {
 				try {
 					string val = operations[operation](vals);
-					cout << cur << "," << operations[operation](vals)
+					if (keycols.size()) cout << cur << ",";
+					cout << operations[operation](vals)
 					     << endl;
 				} catch (char const *) {}
 			}
@@ -155,7 +161,8 @@ int main(int argc, char** argv) {
 	for (auto &x : mapping) {
 		try {
 			string val = operations[operation](x.second);
-			cout << x.first << "," << operations[operation](x.second) << endl;
+			if (keycols.size()) cout << x.first << ",";
+			cout << operations[operation](x.second) << endl;
 		} catch (char const*) {}
 	}
 	}

@@ -1,12 +1,13 @@
 import os
 
 tools = dict()
+tools2 = dict()
 tools['csv_transpose.cc'] = 'csv_transpose'
 tools['csv_join.cc'] = 'csv_join'
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
 tools['csv_mr.cc'] = 'csv_mr'
-tools['csv_mr.cc'] = 'csv_sorted_mr'
+tools2['csv_mr.cc'] = 'csv_sorted_mr'
 tools['csv_stretch.cc'] = 'csv_stretch'
 tools['csv_stretchuniq.cc'] = 'csv_stretchuniq'
 tools['csv_filter_notfound.cc'] = 'csv_filter_notfound'
@@ -35,5 +36,7 @@ env['ENV']['TERM'] = 'xterm'
 
 Decider('MD5')
 for i in tools:
+	env.Program(source = [i] + common, target = tools[i])
+for i in tools2:
 	env.Program(source = [i] + common, target = tools[i])
 
