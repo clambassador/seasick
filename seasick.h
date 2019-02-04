@@ -123,7 +123,7 @@ protected:
 		}
 	}
 
-	virtual void refine_type(vector<string>* type, const string& cols) {
+	virtual void refine_cut_type(vector<string>* type, const string& cols) {
 		vector<string> vals;
 		vector<string> result;
 		Tokenizer::split(cols, ",", &vals);
@@ -144,6 +144,70 @@ protected:
 		Containers::reorder_vector(*type, result, type);
 	}
 
+	virtual vector<size_t> get_cols(const vector<string>& type,
+					const vector<string>& cols) {
+		vector<size_t> result;
+
+		for (auto &x : cols) {
+			size_t i = atoi(x.c_str());
+			if (i != 0) {
+				result.push_back(i);
+			} else {
+				result.push_back(Containers::index_of(type, x) + 1);
+			}
+		}
+		return result;
+	}
+
+	virtual vector<size_t> get_cols(const vector<string>& type,
+					const string& cols) {
+		vector<string> vals;
+		if (cols == "-") return vector<size_t>();
+		Tokenizer::split(cols, ",", &vals);
+		assert(vals.size());
+		return get_cols(type, vals);
+	}
+
+	virtual string col_name(const vector<string>& type,
+				const string& col) {
+		size_t i = atoi(col.c_str());
+		if (i != 0) {
+			assert(i <= type.size());
+			return type[i - 1];
+		} else {
+			for (auto &y : type) {
+				if (y == col) {
+					return y;
+				}
+			}
+			return col + "_notfound";
+		}
+	}
+
+	virtual void refine_mr_type(vector<string>* type,
+				    const string& keys,
+				    const string& vals,
+				    const string& op) {
+		vector<string> result;
+		vector<size_t> cols = get_cols(*type, vals);
+		vector<size_t> keycols = get_cols(*type, keys);
+		assert(vals.size());
+		for (auto &x : keycols) {
+			assert(x <= type.size());
+			result.push_back((*type)[x - 1]);
+		}
+
+		result.push_back(mr_colname(vals, op));
+		*type = result;
+	}
+
+	virtual string mr_colname(const string& vals,
+				  const string& op) {
+		string col = Tokenizer::replace(vals, ",", "-");
+
+		return col + "_" + op;
+	}
+
 	virtual int process_type(const vector<string>& tokens,
 				 size_t* cur,
 				 vector<string>* type) {
@@ -152,7 +216,10 @@ protected:
 
 		if (*cur + args >= tokens.size()) return -1;
 		if (command == "cut" || command == "project") {
-			refine_type(type, tokens[*cur + 1]);
+			refine_cut_type(type, tokens[*cur + 1]);
+		} else if (command == "mr") {
+			refine_mr_type(type, tokens[*cur + 1], tokens[*cur + 1],
+				    tokens[*cur + 2]);
 		} else if (command == "type") {
 			if (_types.count(tokens[*cur + 1])) {
 				*type = _types[tokens[*cur + 1]];
@@ -439,6 +506,19 @@ public:
 				        << typeset_column(get_type(tokens, cur),
 							  tokens[cur]);
 				++cur;
+	                } else if (op == "mr") {
+				NEEDS(3);
+				string keys = typeset_column(get_type(tokens,
+								      cur),
+							     tokens[cur]);
+				string vals = typeset_column(get_type(tokens,
+								      cur),
+							     tokens[cur + 1]);
+				string op = tokens[cur + 2];
+				if (keys.empty()) keys = "-";
+				command << "| csv_mr " << keys << " "
+					<< vals << " " << op;
+				cur += 3;
 	                } else if (op == "filter_len") {
 				NEEDS(3);
 				command << "| csv_filter_len "
@@ -452,6 +532,7 @@ public:
 				NEEDS(1);
 				++cur;
 	                } else if (op == "count") {
+
 			} else if (op == "|") {
 				continue;  // nop for console consistency
 		        } else if (op == "done") {
