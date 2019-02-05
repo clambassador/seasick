@@ -193,7 +193,7 @@ protected:
 		vector<size_t> keycols = get_cols(*type, keys);
 		assert(vals.size());
 		for (auto &x : keycols) {
-			assert(x <= type.size());
+			assert(x <= type->size());
 			result.push_back((*type)[x - 1]);
 		}
 
@@ -211,6 +211,7 @@ protected:
 	virtual int process_type(const vector<string>& tokens,
 				 size_t* cur,
 				 vector<string>* type) {
+		if (type->empty()) return -1;
 		string command = tokens[*cur];
 		size_t args = _commands[command]->args();
 
