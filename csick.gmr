@@ -13,3 +13,4 @@ stretch COL:col_to_stretch
 stretchuniq COL:col_to_stretch
 type TYPE
 fill FILEVAR:allow COLS:columns
+mr COLS:keys COLS:vals min|max|sum|vectorize|unique|count|uniqcount
