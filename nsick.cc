@@ -216,6 +216,7 @@ protected:
 };
 
 int main(int argc, char** argv) {
+	Logger::error_to_file();
 	Config::_()->load("csick.cfg");
 	initscr();
 	start_color();

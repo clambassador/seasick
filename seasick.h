@@ -285,7 +285,6 @@ public:
 
 public:
 	virtual int enter_complete(const string& cs, string* output) {
-
 		string command = "";
 		string error = "";
 		string result = "";
