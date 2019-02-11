@@ -16,7 +16,7 @@ using namespace ib;
 
 string vectorize(const vector<string>& input) {
 	stringstream ss;
-	ss << "|";
+	ss << "||";
 	for (const auto &x : input) {
 		ss << x << "|";
 	}
