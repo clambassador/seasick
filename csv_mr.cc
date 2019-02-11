@@ -3,6 +3,7 @@
 #include <vector>
 #include <unistd.h>
 #include <stdlib.h>
+#include <functional>
 
 #include "ib/containers.h"
 #include "ib/csv_table.h"

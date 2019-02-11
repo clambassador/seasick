@@ -50,7 +50,14 @@ public:
 		pipe.push_back("|");
 		_commands["|"].reset(new Command(pipe));
 
-		Fileutil::read_file(Config::_()->gets("grammar"), &rules);
+		if (!Fileutil::exists(Config::_()->gets("grammar"), &rules)) {
+			if (!Fileutil::exists("/etc/csick.gmr")) {
+				Logger::error("deploy grammar to /etc");
+			}
+			Fileutil::read_file("/etc/csick.gmr", &rules);
+		} else {
+			Fileutil::read_file(Config::_()->gets("grammar"), &rules);
+		}
 
 		for (auto &x : rules) {
 			if (x.empty()) continue;
