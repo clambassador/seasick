@@ -20,7 +20,7 @@ string vectorize(const vector<string>& input) {
 	for (const auto &x : input) {
 		ss << x << "|";
 	}
-	ss << "|" << endl;
+	ss << "|";
 	return ss.str();
 }
 

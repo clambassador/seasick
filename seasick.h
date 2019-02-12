@@ -50,7 +50,7 @@ public:
 		pipe.push_back("|");
 		_commands["|"].reset(new Command(pipe));
 
-		if (!Fileutil::exists(Config::_()->gets("grammar"), &rules)) {
+		if (!Fileutil::exists(Config::_()->gets("grammar"))) {
 			if (!Fileutil::exists("/etc/csick.gmr")) {
 				Logger::error("deploy grammar to /etc");
 			}
@@ -118,8 +118,7 @@ protected:
 		for (const auto &x : _var_to_file) {
 			choices->push_back(x.first);
 		}
-	//	Fileutil::list_directory(".", ".csv", choices);
-		// TODO: add dirs
+		Fileutil::list_directory(".", ".csv", choices);
 	}
 
 	virtual void tab_commands(vector<string>* choices,
