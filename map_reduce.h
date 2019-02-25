@@ -110,7 +110,7 @@ public:
         	}
 
 		if (!_operations.count(operation))
-			throw string("no such operation" + operation);
+			throw string("no such operation: " + operation);
 
 		return negate ^ _operations[operation](vals);
 	}
@@ -131,7 +131,7 @@ public:
 		}
 		// todo : handle morethan cleverly
 		if (!_operations.count(operation))
-			throw string("no such operation" + operation);
+			throw string("no such operation: " + operation);
 
 		return _operations[operation](vals);
 	}

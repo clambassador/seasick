@@ -40,5 +40,5 @@ Decider('MD5')
 for i in tools:
 	env.Program(source = [i] + common, target = tools[i])
 for i in tools2:
-	env.Program(source = [i] + common, target = tools[i])
+	env.Program(source = [i] + common, target = tools2[i])
 
