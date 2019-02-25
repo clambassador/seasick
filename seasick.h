@@ -118,8 +118,7 @@ protected:
 		for (const auto &x : _var_to_file) {
 			choices->push_back(x.first);
 		}
-	//	Fileutil::list_directory(".", ".csv", choices);
-		// TODO: add dirs
+		Fileutil::list_directory(".", ".csv", choices);
 	}
 
 	virtual void tab_commands(vector<string>* choices,
