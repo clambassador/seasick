@@ -50,7 +50,7 @@ public:
 		pipe.push_back("|");
 		_commands["|"].reset(new Command(pipe));
 
-		if (!Fileutil::exists(Config::_()->gets("grammar"), &rules)) {
+		if (!Fileutil::exists(Config::_()->gets("grammar"))) {
 			if (!Fileutil::exists("/etc/csick.gmr")) {
 				Logger::error("deploy grammar to /etc");
 			}
@@ -90,7 +90,7 @@ public:
 			tab_complete_impl(tokens, last, &all, hint);
 			for (auto &x : all) {
 				if (x.find(last) == 0) {
-					choices->push_back(x);
+			 		choices->push_back(x);
 				}
 			}
 		} else {

@@ -217,7 +217,13 @@ protected:
 
 int main(int argc, char** argv) {
 	Logger::error_to_file();
-	Config::_()->load("csick.cfg");
+	if (Fileutil::exists("csick.cfg"))
+		Config::_()->load("csick.cfg");
+	else {
+		assert(Fileutil::exists("/etc/csick.cfg"));
+		Config::_()->load("/etc/csick.cfg");
+	}
+
 	initscr();
 	start_color();
 	keypad(stdscr, true);
