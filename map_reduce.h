@@ -35,6 +35,13 @@ public:
 		return Logger::stringify(input.size());
 	}
 
+	static string merge(const vector<string>& input) {
+		for (auto &x : input) {
+			if (!x.empty()) return x;
+		}
+		return "";
+	}
+
 	static string morethan(string param, const vector<string>& input) {
 		size_t amount = atoi(param.c_str());
 		if (input.size() > amount)
@@ -136,6 +143,7 @@ public:
 		        _operations["count"] = bind(&count, _1);
 		        _operations["unique_count"] = bind(&unique_count, _1);
 		        _operations["uniqcount"] = bind(&unique_count, _1);
+			_operations["merge"] = bind(&merge, _1);
 		}
 		// todo : handle morethan cleverly
 		if (!_operations.count(operation))
