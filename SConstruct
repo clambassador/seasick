@@ -32,9 +32,9 @@ for i in range(0, 5):
 
 libs = Split("""pthread
 	        ncurses
-		microhttpd
 	     """)
-env = Environment(CXX="ccache clang++ -pthread -I"+ PATH_TO_IB, CPPFLAGS="-D_FILE_OFFSET_BITS=64 -Wall -g --std=c++11 -pthread", LIBS=libs, CPPPATH=PATH_TO_IB)
+
+env = Environment(CXX="ccache clang++ -pthread -I"+ PATH_TO_IB, CPPFLAGS="-D_FILE_OFFSET_BITS=64 -Wall -O2 --std=c++11 -pthread", LIBS=libs, CPPPATH=PATH_TO_IB)
 env['ENV']['TERM'] = 'xterm'
 
 Decider('MD5')

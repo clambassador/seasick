@@ -46,9 +46,10 @@ int main(int argc, char** argv) {
 	if (!need_sort) {
 	stringstream ss;
 	while (true) {
+		stringstream next_ss;
 		vector<string> row;
-		ts.get_next_row(&row, &ss);
-		ss << endl;
+		ts.get_next_row(&row, &next_ss);
+		next_ss << endl;
 		if (!row.size()) break;
 		if (row.size() == 1 && row[0].empty()) break;
 		string key = Tokenizer::join(row, ",", keycols);
@@ -68,6 +69,7 @@ int main(int argc, char** argv) {
 			vals.clear();
 			ss.str("");
 		}
+		ss << next_ss.str();
 		vals.push_back(Tokenizer::join(row, ",", valcols));
 	}
 	if (!unset) {

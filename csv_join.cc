@@ -36,11 +36,8 @@ int main(int argc, char** argv) {
 			while (true) {
 				vector<string> row;
 				ts[i]->get_next_row(&row);
-				Logger::info("i % row %", i, row);
 				if (!row.size()) break;
 				Tokenizer::join(row, ",", cols[i], &in, &out);
-				if (inpart.size()) Logger::info("% % %", in, inpart[0], in <
-					     inpart[0]);
 				if (inpart.size() && in < inpart[0]) continue;
 				if (inpart.size() && in > inpart[0]) {
 					ts[i]->set_next_row(row);
@@ -51,14 +48,12 @@ int main(int argc, char** argv) {
 					inpart.push_back(in);
 					outpart.push_back(vector<string>());
 				}
-				Logger::info("in and part % %", in, inpart[0]);
 				outpart.back().push_back(out);
 			}
 		}
 		if (!inpart.size()) return 0;
 		vector<vector<string>::iterator> iters;
                 for (size_t i = 0; i < outpart.size(); ++i) {
-			Logger::info("% % %", "log", i, outpart[i]);
 			if (outpart[i].empty()) {
 				continue;
 			}

@@ -87,7 +87,11 @@ public:
 	}
 
 	static bool more_than_one(const vector<string>& input) {
-		return input.size() == 1;
+		return Containers::unique(input).size() > 1;
+	}
+
+	static bool more_than_x(size_t x, const vector<string>& input) {
+		return Containers::unique(input).size() > x;
 	}
 
 	static bool is_unique(const vector<string>& input) {
@@ -99,7 +103,11 @@ public:
 			_operations;
 
 		if (!_operations.size()) {
-		        _operations["more_than_one"] = bind(&more_than_one, _1);
+			for (size_t i = 1; i < 100; ++i) {
+			        _operations[Logger::stringify("more_than_%", i)]
+				    = bind(&more_than_x, i, _1);
+			}
+			_operations["more_than_one"] = bind(&more_than_one, _1);
 		        _operations["is_unique"] = bind(&is_unique, _1);
 		}
 
