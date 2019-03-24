@@ -35,6 +35,14 @@ int main(int argc, char** argv) {
 	set<size_t> valcols;
 	Tokenizer::numset(argv[1], &keycols, -1);
 	Tokenizer::numset(argv[2], &valcols, -1);
+	size_t max = 0;
+	for (auto &x : keycols) {
+		if (x > max) max = x;
+	}
+	for (auto &x : valcols) {
+		if (x > max) max = x;
+	}
+	++max;
 
 	string operation = argv[3];
 
@@ -50,6 +58,7 @@ int main(int argc, char** argv) {
 		ts.get_next_row(&row);
 		if (!row.size()) break;
 		if (row.size() == 1 && row[0].empty()) break;
+		if (row.size() < max) continue;
 		string key = Tokenizer::join(row, ",", keycols);
 		if (unset || cur != key) {
 			if (vals.size()) {

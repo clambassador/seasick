@@ -5,6 +5,7 @@ tools2 = dict()
 tools['multigrep.cc'] = 'multigrep'
 tools['csv_transpose.cc'] = 'csv_transpose'
 tools['csv_append.cc'] = 'csv_append'
+tools['csv_fr.cc'] = 'csv_fr'
 tools['csv_join.cc'] = 'csv_join'
 tools['csv_grep.cc'] = 'csv_grep'
 tools['csv_uniq.cc'] = 'csv_uniq'
