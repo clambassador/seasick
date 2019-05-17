@@ -31,6 +31,19 @@ public:
 		return ss.str();
 	}
 
+	static string doublecount(const vector<string>& input) {
+		stringstream ss;
+		if (input.size() == 1) {
+			ss << input[0] << ",0";
+		} else {
+			size_t i = atoi(input[0].c_str());
+			size_t j = atoi(input[1].c_str());
+			if (i > j) ss << i + j << "," << j;
+			else ss << i + j << "," << i;
+		}
+		return ss.str();
+	}
+
 	static string count(const vector<string>& input) {
 		return Logger::stringify(input.size());
 	}
@@ -144,6 +157,7 @@ public:
 		        _operations["unique_count"] = bind(&unique_count, _1);
 		        _operations["uniqcount"] = bind(&unique_count, _1);
 			_operations["merge"] = bind(&merge, _1);
+			_operations["doublecount"] = bind(&doublecount, _1);
 		}
 		// todo : handle morethan cleverly
 		if (!_operations.count(operation))
