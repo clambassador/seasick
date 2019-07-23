@@ -62,6 +62,11 @@ public:
 		else throw "skip";
 	}
 
+	static string unique_and_count(const vector<string>& input) {
+		const vector<string> elements = Containers::unique(input);
+		return vectorize(elements) + "," + Logger::stringify(Containers::unique(input).size());
+	}
+
 	static string unique_count(const vector<string>& input) {
 		return Logger::stringify(Containers::unique(input).size());
 	}
@@ -156,6 +161,9 @@ public:
 		        _operations["count"] = bind(&count, _1);
 		        _operations["unique_count"] = bind(&unique_count, _1);
 		        _operations["uniqcount"] = bind(&unique_count, _1);
+		        _operations["countunique"] = bind(&unique_count, _1);
+		        _operations["uniq_and_count"] = bind(&unique_and_count, _1);
+		        _operations["unique_and_count"] = bind(&unique_and_count, _1);
 			_operations["merge"] = bind(&merge, _1);
 			_operations["doublecount"] = bind(&doublecount, _1);
 		}
