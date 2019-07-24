@@ -15,15 +15,16 @@ using namespace ib;
 
 int main(int argc, char** argv) {
 	bool exact = false;
+	bool full = false;
 	if (argc < 2) {
-		Logger::error("usage: % col mapfile [exact]", argv[0]);
+		Logger::error("usage: % col mapfile [exact] [fullreplace]", argv[0]);
 		return -1;
 	}
-	if (argc == 4) exact = true;
+	if (argc >= 4) exact = true;
+	if (argc >= 5) full = true;
 	map<string, string> fr;
 	CSVTable<false>::load_map(argv[2], &fr);
 	CSVTable<false> table;
-
 	table.stream();
 	int col = atoi(argv[1]) - 1;
 
@@ -34,7 +35,13 @@ int main(int argc, char** argv) {
 		if (row.size() == 1 && row[0] == "") break;
 		if (exact) {
 			if (fr.count(row[col])) {
-				row[col] = fr[row[col]];
+				if (full) {
+					row.push_back(fr[row[col]]);
+				} else {
+					row[col] = fr[row[col]];
+				}
+			} else {
+				row.push_back("");
 			}
 		} else {
 			for (auto &x: fr) {

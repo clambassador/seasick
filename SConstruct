@@ -3,6 +3,8 @@ import os
 tools = dict()
 tools2 = dict()
 tools['multigrep.cc'] = 'multigrep'
+tools['csv_contains.cc'] = 'csv_contains'
+tools['csv_multigrep.cc'] = 'csv_multigrep'
 tools['csv_transpose.cc'] = 'csv_transpose'
 tools['csv_merge.cc'] = 'csv_merge'
 tools['csv_append.cc'] = 'csv_append'
