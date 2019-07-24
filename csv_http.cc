@@ -23,9 +23,9 @@ int main(int argc, char** argv) {
 
 		cout << "  <tr>" << endl;
 		for (const auto &x : line) {
-			cout << "    <td>" << x << "</td>" << endl;
+			cout << "    <td>" << x << "</td>";
 		}
-		cout << "  </td>" << endl;
+		cout << "  </tr>" << endl;
 	}
 	cout << "</table>" << endl;
 }
