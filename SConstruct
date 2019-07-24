@@ -4,6 +4,7 @@ tools = dict()
 tools2 = dict()
 tools['multigrep.cc'] = 'multigrep'
 tools['csv_contains.cc'] = 'csv_contains'
+tools['csv_http.cc'] = 'csv_http'
 tools['csv_multigrep.cc'] = 'csv_multigrep'
 tools['csv_groupselect.cc'] = 'csv_groupselect'
 tools['csv_transpose.cc'] = 'csv_transpose'
