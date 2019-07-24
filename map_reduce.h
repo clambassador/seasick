@@ -62,6 +62,20 @@ public:
 		else throw "skip";
 	}
 
+	static string unique_to_count(const vector<string>& input) {
+		map<string, size_t> result;
+		for (const auto &x : input) {
+			result[x]++;
+		}
+		stringstream ss;
+		ss << "||";
+		for (const auto &x : result) {
+			ss << x.first << "|" << x.second << "|";
+		}
+		ss << "|";
+		return ss.str();
+	}
+
 	static string unique_and_count(const vector<string>& input) {
 		const vector<string> elements = Containers::unique(input);
 		return vectorize(elements) + "," + Logger::stringify(Containers::unique(input).size());
@@ -159,6 +173,7 @@ public:
 		        _operations["vectorize"] = bind(&vectorize, _1);
 		        _operations["unique"] = bind(&unique, _1);
 		        _operations["count"] = bind(&count, _1);
+		        _operations["unique_to_count"] = bind(&unique_to_count, _1);
 		        _operations["unique_count"] = bind(&unique_count, _1);
 		        _operations["uniqcount"] = bind(&unique_count, _1);
 		        _operations["countunique"] = bind(&unique_count, _1);
